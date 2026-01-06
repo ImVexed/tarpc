@@ -6,9 +6,14 @@
 
 //! Provides a server that concurrently handles many connections sending multiplexed requests.
 
-#[cfg(target_arch = "wasm32")]
+// The core server framework can compile for `wasm32-unknown-unknown` as long as it does not rely on
+// OS sockets. The socket-based transports (`tcp`, `unix`) enable `tokio/net`, which depends on
+// `mio/socket2` and is not supported on browser-oriented WASM targets.
+#[cfg(all(target_arch = "wasm32", any(feature = "tcp", feature = "unix")))]
 compile_error!(
-    "Server can not compile to WASM targets. Please exclude \"server\" from features list."
+    "The tarpc `tcp`/`unix` transport features are not supported on `wasm32-unknown-unknown` \
+     (they require `tokio/net` which pulls in `mio/socket2`). Disable `tcp`/`unix` or use a \
+     non-socket transport when targeting WASM."
 );
 
 pub use crate::serve::{Serve, ServeFn, serve};

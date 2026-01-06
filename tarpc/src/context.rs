@@ -13,7 +13,6 @@ use std::{convert::TryFrom, time::Duration};
 
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 
-#[cfg(feature = "server")]
 use opentelemetry::trace::TraceContextExt;
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -142,14 +141,12 @@ impl Context {
 }
 
 /// An extension trait for [`tracing::Span`] for propagating tarpc Contexts.
-#[cfg(feature = "server")]
 pub(crate) trait SpanExt {
     /// Sets the given context on this span. Newly-created spans will be children of the given
     /// context's trace context.
     fn set_context(&self, context: &Context);
 }
 
-#[cfg(feature = "server")]
 impl SpanExt for tracing::Span {
     fn set_context(&self, context: &Context) {
         // Explicitly ignore the returned result because it either means that the span has

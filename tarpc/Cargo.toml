@@ -17,11 +17,9 @@ readme = "README.md"
 description = "An RPC framework for Rust with a focus on ease of use."
 
 [features]
-default = ["server", "client"]
+default = []
 
 serde1 = ["tarpc-plugins/serde1", "serde", "serde/derive", "serde/rc"]
-server = ["tarpc-plugins/server"]
-client = ["tarpc-plugins/client"]
 tokio1 = ["tokio/rt"]
 serde-transport = ["serde1", "tokio1", "tokio-serde", "tokio-util/codec"]
 serde-transport-json = ["serde-transport", "tokio-serde/json"]

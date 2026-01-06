@@ -242,10 +242,8 @@ pub use tarpc_plugins::derive_serde;
 pub use tarpc_plugins::service;
 
 pub(crate) mod cancellations;
-#[cfg(feature = "client")]
 pub mod client;
 pub mod context;
-#[cfg(feature = "server")]
 pub mod server;
 pub mod serve;
 pub mod transport;
