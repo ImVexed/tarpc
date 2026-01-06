@@ -8,13 +8,20 @@
 //! client to server and is used by the server to enforce response deadlines.
 
 use crate::trace::{self, TraceId};
-use opentelemetry::trace::TraceContextExt;
 use static_assertions::assert_impl_all;
-use std::{
-    convert::TryFrom,
-    time::{Duration, Instant},
-};
+use std::{convert::TryFrom, time::Duration};
+
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+
+#[cfg(feature = "server")]
+use opentelemetry::trace::TraceContextExt;
+
+#[cfg(not(target_arch = "wasm32"))]
+/// A monotonic clock instant type that works on native targets.
+pub type Instant = std::time::Instant;
+#[cfg(target_arch = "wasm32")]
+/// A monotonic clock instant type that works on WASM targets.
+pub type Instant = wasmtimer::std::Instant;
 
 /// A request context that carries request-scoped information like deadlines and trace information.
 /// It is sent from client to server and is used by the server to enforce response deadlines.
@@ -41,7 +48,8 @@ pub struct Context {
 #[cfg(feature = "serde1")]
 mod absolute_to_relative_time {
     pub use serde::{Deserialize, Deserializer, Serialize, Serializer};
-    pub use std::time::{Duration, Instant};
+    pub use std::time::Duration;
+    use super::Instant;
 
     pub fn serialize<S>(deadline: &Instant, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -134,12 +142,14 @@ impl Context {
 }
 
 /// An extension trait for [`tracing::Span`] for propagating tarpc Contexts.
+#[cfg(feature = "server")]
 pub(crate) trait SpanExt {
     /// Sets the given context on this span. Newly-created spans will be children of the given
     /// context's trace context.
     fn set_context(&self, context: &Context);
 }
 
+#[cfg(feature = "server")]
 impl SpanExt for tracing::Span {
     fn set_context(&self, context: &Context) {
         // Explicitly ignore the returned result because it either means that the span has

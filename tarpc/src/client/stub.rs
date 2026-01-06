@@ -4,7 +4,7 @@ use crate::{
     RequestName,
     client::{Channel, RpcError},
     context,
-    server::Serve,
+    serve::Serve,
 };
 
 pub mod load_balance;

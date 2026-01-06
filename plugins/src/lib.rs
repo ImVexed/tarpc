@@ -471,13 +471,18 @@ pub fn service(attr: TokenStream, input: TokenStream) -> TokenStream {
 
     ServiceGenerator {
         service_ident: ident,
+        #[cfg(feature = "client")]
         client_stub_ident: &format_ident!("{}Stub", ident),
+        #[cfg(feature = "server")]
         server_ident: &format_ident!("Serve{}", ident),
+        #[cfg(feature = "client")]
         client_ident: &format_ident!("{}Client", ident),
         request_ident: &format_ident!("{}Request", ident),
+        #[cfg(feature = "server")]
         response_ident: &format_ident!("{}Response", ident),
         vis,
         args,
+        #[cfg(feature = "client")]
         method_attrs: &rpcs.iter().map(|rpc| &*rpc.attrs).collect::<Vec<_>>(),
         method_cfgs: &collect_cfg_attrs(rpcs),
         method_idents: &methods,
@@ -511,10 +516,14 @@ pub fn service(attr: TokenStream, input: TokenStream) -> TokenStream {
 // the client stub.
 struct ServiceGenerator<'a> {
     service_ident: &'a Ident,
+    #[cfg(feature = "client")]
     client_stub_ident: &'a Ident,
+    #[cfg(feature = "server")]
     server_ident: &'a Ident,
+    #[cfg(feature = "client")]
     client_ident: &'a Ident,
     request_ident: &'a Ident,
+    #[cfg(feature = "server")]
     response_ident: &'a Ident,
     vis: &'a Visibility,
     attrs: &'a [Attribute],
@@ -522,6 +531,7 @@ struct ServiceGenerator<'a> {
     camel_case_idents: &'a [Ident],
     method_idents: &'a [&'a Ident],
     request_names: &'a [String],
+    #[cfg(feature = "client")]
     method_attrs: &'a [&'a [Attribute]],
     method_cfgs: &'a [Vec<&'a Attribute>],
     args: &'a [&'a [PatType]],
@@ -539,9 +549,12 @@ impl ServiceGenerator<'_> {
             vis,
             return_types,
             service_ident,
+            #[cfg(feature = "client")]
             client_stub_ident,
             request_ident,
+            #[cfg(feature = "server")]
             response_ident,
+            #[cfg(feature = "server")]
             server_ident,
             ..
         } = self;
@@ -564,6 +577,7 @@ impl ServiceGenerator<'_> {
             );
 
         let stub_doc = format!("The stub trait for service [`{service_ident}`].");
+        #[cfg(feature = "server")]
         quote! {
             #( #attrs )*
             #vis trait #service_ident: ::core::marker::Sized {
@@ -585,8 +599,16 @@ impl ServiceGenerator<'_> {
             {
             }
         }
+        #[cfg(not(feature = "server"))]
+        quote! {
+            #( #attrs )*
+            #vis trait #service_ident: Sized {
+                #( #types_and_fns )*
+            }
+        }
     }
 
+    #[cfg(feature = "server")]
     fn struct_server(&self) -> TokenStream2 {
         let &Self {
             vis, server_ident, ..
@@ -601,6 +623,7 @@ impl ServiceGenerator<'_> {
         }
     }
 
+    #[cfg(feature = "server")]
     fn impl_serve_for_server(&self) -> TokenStream2 {
         let &Self {
             request_ident,
@@ -683,6 +706,7 @@ impl ServiceGenerator<'_> {
         let &Self {
             derives,
             vis,
+            #[cfg(feature = "server")]
             response_ident,
             camel_case_idents,
             return_types,
@@ -700,6 +724,7 @@ impl ServiceGenerator<'_> {
         }
     }
 
+    #[cfg(feature = "client")]
     fn struct_client(&self) -> TokenStream2 {
         let &Self {
             vis,
@@ -720,6 +745,7 @@ impl ServiceGenerator<'_> {
         }
     }
 
+    #[cfg(feature = "client")]
     fn impl_client_new(&self) -> TokenStream2 {
         let &Self {
             client_ident,
@@ -762,6 +788,7 @@ impl ServiceGenerator<'_> {
         }
     }
 
+    #[cfg(feature = "client")]
     fn impl_client_rpc_methods(&self) -> TokenStream2 {
         let &Self {
             client_ident,
@@ -811,12 +838,17 @@ impl ToTokens for ServiceGenerator<'_> {
     fn to_tokens(&self, output: &mut TokenStream2) {
         output.extend(vec![
             self.trait_service(),
+            #[cfg(feature = "server")]
             self.struct_server(),
+            #[cfg(feature = "server")]
             self.impl_serve_for_server(),
             self.enum_request(),
             self.enum_response(),
+            #[cfg(feature = "client")]
             self.struct_client(),
+            #[cfg(feature = "client")]
             self.impl_client_new(),
+            #[cfg(feature = "client")]
             self.impl_client_rpc_methods(),
             self.emit_warnings(),
         ]);

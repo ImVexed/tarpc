@@ -242,15 +242,18 @@ pub use tarpc_plugins::derive_serde;
 pub use tarpc_plugins::service;
 
 pub(crate) mod cancellations;
+#[cfg(feature = "client")]
 pub mod client;
 pub mod context;
+#[cfg(feature = "server")]
 pub mod server;
+pub mod serve;
 pub mod transport;
 pub(crate) mod util;
 
 pub use crate::transport::sealed::Transport;
 
-use std::{any::Any, error::Error, io, sync::Arc, time::Instant};
+use std::{any::Any, error::Error, io, sync::Arc};
 
 /// A message from a client to a server.
 #[derive(Debug)]
@@ -492,7 +495,7 @@ impl ServerError {
 
 impl<T> Request<T> {
     /// Returns the deadline for this request.
-    pub fn deadline(&self) -> &Instant {
+    pub fn deadline(&self) -> &context::Instant {
         &self.context.deadline
     }
 }

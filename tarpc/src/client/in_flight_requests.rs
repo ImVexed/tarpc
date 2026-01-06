@@ -8,7 +8,12 @@ use std::{
     task::{Context, Poll},
 };
 use tokio::sync::oneshot;
+
+#[cfg(not(target_arch = "wasm32"))]
 use tokio_util::time::delay_queue::{self, DelayQueue};
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::tokio_util::delay_queue::{self, DelayQueue};
+
 use tracing::Span;
 
 /// Requests already written to the wire that haven't yet received responses.

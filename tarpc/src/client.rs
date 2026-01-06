@@ -13,8 +13,9 @@ use crate::{
     ChannelError, ClientMessage, Request, RequestName, Response, ServerError, Transport,
     cancellations::{CanceledRequests, RequestCancellation, cancellations},
     context, trace,
-    util::TimeUntil,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use crate::util::TimeUntil;
 use futures::{prelude::*, ready, stream::Fuse, task::*};
 use in_flight_requests::InFlightRequests;
 use pin_project::pin_project;
@@ -27,8 +28,9 @@ use std::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     },
-    time::SystemTime,
 };
+#[cfg(not(target_arch = "wasm32"))]
+use std::time::SystemTime;
 use tokio::sync::{mpsc, oneshot};
 use tracing::Span;
 
@@ -119,7 +121,7 @@ where
 {
     /// Sends a request to the dispatch task to forward to the server, returning a [`Future`] that
     /// resolves to the response.
-    #[tracing::instrument(
+    #[cfg_attr(not(target_arch="wasm32"),tracing::instrument(
         name = "RPC",
         skip(self, ctx, request),
         fields(
@@ -127,7 +129,7 @@ where
             rpc.deadline = %humantime::format_rfc3339(SystemTime::now() + ctx.deadline.time_until()),
             otel.kind = "client",
             otel.name = %request.name())
-        )]
+        ))]
     pub async fn call(&self, mut ctx: context::Context, request: Req) -> Result<Resp, RpcError> {
         let span = Span::current();
         ctx.trace_context = trace::Context::try_from(&span).unwrap_or_else(|_| {

@@ -7,5 +7,10 @@ members = [
     "plugins",
 ]
 
+default-members = [
+    "tarpc",
+    "plugins",
+]
+
 [profile.dev]
 split-debuginfo = "unpacked"
