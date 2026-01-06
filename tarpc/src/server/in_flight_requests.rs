@@ -5,12 +5,16 @@ use std::{
     collections::hash_map,
     task::{Context, Poll},
 };
-use tokio_util::time::delay_queue::{self, DelayQueue};
 use tracing::Span;
 #[cfg(not(target_arch = "wasm32"))]
 use std::time::Instant;
 #[cfg(target_arch = "wasm32")]
 use wasmtimer::std::Instant;
+
+#[cfg(not(target_arch = "wasm32"))]
+use tokio_util::time::delay_queue::{self, DelayQueue};
+#[cfg(target_arch = "wasm32")]
+use wasmtimer::tokio_util::delay_queue::{self, DelayQueue};
 
 /// A data structure that tracks in-flight requests. It aborts requests,
 /// either on demand or when a request deadline expires.

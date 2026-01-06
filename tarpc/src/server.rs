@@ -36,7 +36,7 @@ use futures::{
 use in_flight_requests::{AlreadyExistsError, InFlightRequests};
 use pin_project::pin_project;
 use std::{
-    convert::TryFrom, error::Error, fmt, marker::PhantomData, pin::Pin, sync::Arc, time::SystemTime,
+    convert::TryFrom, error::Error, fmt, marker::PhantomData, pin::Pin, sync::Arc,
 };
 use tracing::{Span, info_span, instrument::Instrument};
 
@@ -156,13 +156,29 @@ where
         mut self: Pin<&mut Self>,
         mut request: Request<Req>,
     ) -> Result<TrackedRequest<Req>, AlreadyExistsError> {
-        let span = info_span!(
-            "RPC",
-            rpc.trace_id = %request.context.trace_id(),
-            rpc.deadline = %humantime::format_rfc3339(SystemTime::now() + request.context.deadline.time_until()),
-            otel.kind = "server",
-            otel.name = tracing::field::Empty,
-        );
+        let span = {
+            #[cfg(not(target_arch = "wasm32"))]
+            {
+                use std::time::SystemTime;
+                info_span!(
+                    "RPC",
+                    rpc.trace_id = %request.context.trace_id(),
+                    rpc.deadline = %humantime::format_rfc3339(SystemTime::now() + request.context.deadline.time_until()),
+                    otel.kind = "server",
+                    otel.name = tracing::field::Empty,
+                )
+            }
+            #[cfg(target_arch = "wasm32")]
+            {
+                info_span!(
+                    "RPC",
+                    rpc.trace_id = %request.context.trace_id(),
+                    rpc.deadline = %humantime::format_duration(request.context.deadline.time_until()),
+                    otel.kind = "server",
+                    otel.name = tracing::field::Empty,
+                )
+            }
+        };
         span.set_context(&request.context);
         request.context.trace_context = trace::Context::try_from(&span).unwrap_or_else(|_| {
             tracing::trace!(
